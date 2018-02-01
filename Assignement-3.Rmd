@@ -1,0 +1,110 @@
+---
+title: "Computergestützte statistische Programmierung mit R (WS 17/18)"
+subtitle: "Assignment 3"
+author:
+- Ningjie Cao - 5137274
+- Mario Peplinski - 5058105
+- Sebastian Selmke - 5064148
+date: "`r format(Sys.time(), '%d %B %Y')`"
+header-includes:
+  - \usepackage[T1]{fontenc}
+  - \renewcommand\familydefault{\sfdefault}
+output: pdf_document
+
+---
+
+```{r setup,echo=FALSE,message=FALSE,cache=FALSE,include=TRUE}
+library(dplyr)
+library(knitr)
+library(xtable)
+library(ggplot2)
+library(Hmisc)
+library(ggpubr)
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Part I: Linear 
+Raw Implementation
+```{r setup,echo=FALSE,message=FALSE,cache=FALSE,include=TRUE}
+linModEst <- function(x,y){
+  ## compute beta
+  beta <- solve(t(x)%*%x)%*%t(x)%*%y
+  
+  ## calculate degrees of freedom
+  df <- nrow(x) - ncol(x)
+  if(df < 0){
+    df <- 0 - df
+  }
+
+  ## calculate sigmaˆ2
+  ## needs SSR first
+  y_predicted <- x%*%beta
+  residuals <- y-y_predicted
+  SSR <- sum(residuals^2)
+  sigma <-  sqrt(solve(df/SSR))
+  
+  ## compute vcov
+  vcov <- solve(t(x)%*%x)*as.vector(sigma^2)
+  
+  ## print out 
+  print("coefficients:")
+  print(beta)
+  
+  print("vcov")
+  print(vcov)  
+
+  print("sigma;")
+  print(sigma)
+  
+  print("df:")
+  print(df)
+  
+  result <- list(beta,df,sigma,vcov)
+  return(result)
+}
+
+
+data(cats, package = "MASS")
+linModEst(x = cbind(1, 
+                         cats$Bwt,
+                         as.numeric(cats$Sex) -1),
+               y = cats$Hwt)
+
+}
+```
+
+Extended Implementation
+```{r setup,echo=FALSE,message=FALSE,cache=FALSE,include=TRUE}
+linMod <- function(formula,data){
+  # get the frame from data
+t <- model.frame(formula,data)
+
+ # @TODO
+ # extract and format x, y 
+ # all values needs to be numeric
+y <-t[1]
+x <-as.matrix(t[2:ncol(t)])
+
+y <- y
+x <- sapply(x,function(x) as.numeric(x))
+
+y <- as.matrix(y)
+x <- as.matrix(x)
+
+# call raw implementation
+result <- linModEst(x,y)
+# extend result
+result <- list(result,formula)
+
+
+print(formula)
+
+}
+
+data(cats, package = "MASS")
+linMod(Hwt ~ Bwt+Sex, data = cats)
+```
+
+## Part II: S3 for linear models
+
+
